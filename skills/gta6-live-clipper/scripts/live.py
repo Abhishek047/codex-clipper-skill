@@ -9,7 +9,7 @@
 
 The recorder (hidden `_daemon` command) keeps 1-minute video segments for --buffer-min minutes,
 transcribes each one on this Mac as it lands, tracks loudness and (Twitch) chat speed, and writes
-windows/window_NNN.md every --window-min minutes. Claude reads each window and writes
+windows/window_NNN.md every --window-min minutes. The agent reads each window and writes
 picks/window_NNN.json (same format as the VOD clipper). Shares the gta6-clipper engine + venv.
 """
 import argparse, csv, json, os, random, signal, socket, statistics, subprocess, sys, threading, time

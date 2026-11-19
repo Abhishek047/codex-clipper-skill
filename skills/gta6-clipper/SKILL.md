@@ -1,22 +1,21 @@
 ---
 name: gta6-clipper
-description: GTA 6 Clipper. Turns GTA 6 streams into ready-to-post vertical clips (facecam on top, gameplay below, hook title, word-by-word captions, post caption + hashtags). Activates on "set up the GTA 6 clipper", "clip this stream <link>", "find me today's biggest GTA 6 streams and clip them", /gta6-clipper, /clip, or any request to clip a YouTube, Twitch or Kick stream. Downloads audio only, transcribes on the Mac, marks loud moments and chat spikes, the Claude session itself reads the transcript 12 minutes at a time and scores moments (no API keys), then downloads only the needed minutes and renders 3 clips per stream. Works on a Claude subscription or free via Ollama (ollama launch claude). Mac only.
+description: Clip finished YouTube, Twitch, or Kick streams into vertical highlights with captions, or discover GTA 6 streams to clip. Also handles setup of the shared macOS clipper engine. Use gta6-live-clipper when the user wants clips as a stream happens.
 ---
 
 # GTA 6 Clipper
 
 Stream link (YouTube, Twitch, Kick) or nothing -> 3 ready-to-post 1080x1920 clips per stream.
-Everything except the picking runs on this Mac. The picking is done by YOU (this Claude Code session),
-so it runs on the user's Claude subscription, or on a local model through Ollama. No API keys.
+The agent scores transcript excerpts. The Python scripts handle local transcription and rendering without a separate model API key.
 
 `S` = this skill's folder. Always run Python through the skill's venv:
-`"$S/.venv/bin/python" "$S/scripts/gta6clip.py" ...`. Quote paths (they may contain spaces).
+`"$S/.venv/bin/python" "$S/scripts/gta6clip.py" ...`. Resolve the skill directory to its real path and quote all paths.
+In Codex, set `GTA6_CLIPS_DIR` to an absolute workspace path such as `<repo>/runs` for
+commands that create or resume VOD runs. Use the same location throughout the run.
 
 ## 0. "Set up the GTA 6 clipper"
 
-On Windows this Mac version will not work: tell the user to install the Windows version
-(https://github.com/vossashtonai/gta6-clipper-windows, one PowerShell command:
-`irm https://raw.githubusercontent.com/vossashtonai/gta6-clipper-windows/main/install.ps1 | iex`).
+Setup requires macOS and Homebrew.
 
 Run `bash "$S/scripts/setup.sh"`. It checks Homebrew, ffmpeg, whisper-cpp, deno, uv, the Python venv
 (yt-dlp, OpenCV, Pillow), the Whisper model and the face detector, installs what's missing and prints
@@ -30,10 +29,10 @@ failing (it updates yt-dlp).
 - Given nothing ("find today's biggest GTA 6 streams"): run `discover` (default 7 streams, `--limit N`),
   show the list, then `prep` all of the URLs it printed. Don't wait for approval unless the user asked to choose.
 - Age-restricted YouTube streams (common with GTA) and Kick need the browser login: add `--cookies chrome`
-  (or safari/firefox). If a download fails with "Sign in to confirm your age" / 403, retry with it.
+  (or safari/firefox). If a download fails with "Sign in to confirm your age" / 403, retry with it if the user has authorized browser-cookie access.
 - `--jobs 2` (default) preps 2 streams at once. Don't go higher on a 16 GB Mac.
 - Long streams take a while (4 h stream: a few min download + ~8-12 min transcript). Run prep in the
-  background for 2+ streams and tell the user it's running.
+  background using the command tool's execution session and poll it until it finishes.
 
 Prep downloads only the audio, transcribes it locally, marks where the streamer got loud and (YouTube
 replays) where chat sped up, and writes `chunks/chunk_NN.md`: 12-minute pieces with `<<LOUD(+12dB)>>` and
@@ -48,9 +47,7 @@ Read `references/picking.md` first, every time. Then for each run folder:
    nothing qualifies. Write the file even when it's empty: that's how progress is tracked.
 3. `status <run>` shows which chunks still have no picks file. Keep going until `chunks_left` is empty.
 
-Multiple streams: give each stream its own subagent (Agent tool, general-purpose) with the run folder path
-and the instruction "read references/picking.md, then do step 3 of SKILL.md for this run folder". Up to 4 at
-once. If you're running on a local Ollama model, skip subagents and do the streams one after another.
+Process the transcript chunks for each stream in turn.
 
 ## 4. Make the clips
 
@@ -67,8 +64,11 @@ writes `clips/clip_NN_<title>.mp4` + `clip_NN_<title>.txt` (title, post caption,
 ## 5. Report
 
 Per stream: stream length -> moments found -> clips kept, total time, and each clip's title, timestamp,
-length, layout (facecam / cam / gameplay) and file path. Open the clips folder with `open "<run>/clips"`.
+length, layout (facecam / cam / gameplay) and file path. Provide clickable links to the output files.
 Remind the user: watch every clip before posting, and only clip streamers who are fine with clipping.
+
+After reporting any finished clips, follow [clip review and upload](references/upload.md). Ask which
+clips the user approves and where they want them uploaded before running any publishing command.
 
 ## Other requests
 
@@ -81,9 +81,3 @@ Remind the user: watch every clip before posting, and only clip streamers who ar
   (or `"cam"`) to that pick in `picks/*.json`, delete its mp4 and re-run render.
 - Disk: prep deletes the audio after transcribing and render deletes downloaded sections (`--keep` keeps
   them). Runs live in `~/GTA6-Clips/` (or `$GTA6_CLIPS_DIR`); delete finished ones only if the user says so.
-
-## Free mode (no subscription)
-
-Same skill, same prompts. The user installs Ollama, pulls a model sized to their MEMORY (Apple menu ->
-About This Mac -> Memory): 16 GB -> `qwen3.5:9b`, 32 GB+ -> `qwen3.5:27b`, then runs `ollama launch claude`
-and picks the model. Be honest if asked: it's slower and the picks are rougher than Claude's.

@@ -1,0 +1,3 @@
+-r youtube/requirements.txt
+requests>=2,<3
+requests-toolbelt>=1,<2

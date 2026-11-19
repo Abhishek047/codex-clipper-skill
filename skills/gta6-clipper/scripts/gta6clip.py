@@ -9,7 +9,7 @@
                       find the facecam, stack facecam over gameplay, hook + word captions,
                       post caption + hashtags
 
-Step 3 (picking) is done by the Claude Code session itself (no API keys); see SKILL.md.
+The agent scores transcript chunks without a separate model API key. See SKILL.md.
 Run with the skill's venv:  .venv/bin/python scripts/gta6clip.py <command>
 """
 import argparse, concurrent.futures as cf, datetime as dt, json, math, os, re, shutil

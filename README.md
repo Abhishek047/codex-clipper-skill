@@ -1,6 +1,6 @@
 # GTA 6 Clipper
 
-Two free Claude Code skills that turn GTA 6 streams into ready-to-post vertical clips.
+Two macOS skills for Codex and Claude Code that turn GTA 6 streams into ready-to-post vertical clips.
 
 - **gta6-clipper** clips a stream that has finished. Give it a YouTube, Twitch or Kick link, or nothing and it finds today's biggest GTA 6 streams.
 - **gta6-live-clipper** clips a stream while it's still live. A clip is ready about 5 to 8 minutes after the moment happens.
@@ -10,7 +10,20 @@ Every clip comes out 1080x1920: facecam on top, gameplay below, a hook title, wo
 **Mac version.** On Windows? Use the Windows version: https://github.com/vossashtonai/gta6-clipper-windows
 or paste this in PowerShell: `irm https://raw.githubusercontent.com/vossashtonai/gta6-clipper-windows/main/install.ps1 | iex`
 
-## Install
+## Use in Codex
+
+Open this repository as your Codex workspace. The two links in `.agents/skills/`
+register the existing skill folders with Codex. Start a new Codex chat in this
+workspace if an existing chat does not show them.
+
+- `$gta6-clipper set up the GTA 6 clipper` installs the shared macOS dependencies. Wait for `READY`.
+- `$gta6-clipper clip this stream <VOD URL>` selects and renders up to three highlights.
+- `$gta6-live-clipper clip this stream live <live URL>` keeps the recorder and highlight selection running in the active chat.
+
+In Codex, outputs go under the repository's `runs/` folder by default.
+Each clip has an MP4 and a companion text file with a title, caption, and hashtags.
+
+## Install in Claude Code
 
 ### Option A: paste this into Claude Code (easiest)
 
@@ -53,6 +66,29 @@ Open Claude Code and say:
 
 Clips land in `~/GTA6-Clips/`. Each one has an `.mp4` and a `.txt` with the title, caption and hashtags.
 
+## Terminal commands
+
+Run `make help` from the repository root for all setup, VOD, live, thumbnail,
+and publishing commands. Make uses `runs/` for VODs and `runs/live/` for live
+recordings by default. Set `GTA6_CLIPS_DIR` or `GTA6_LIVE_DIR` to use other folders.
+
+```sh
+make setup
+make discover ARGS='--limit 5'
+make prep URL='https://www.youtube.com/watch?v=VIDEO_ID'
+make status RUN='runs/example'
+make render RUN='runs/example' ARGS='--top 3'
+
+make setup-upload
+make upload-preview
+make upload
+```
+
+Highlight selection is handled by the clipper skill or by editing pick files
+before running `make render` or `make live-clip`. Pass additional CLI flags
+and multiple positional inputs with `ARGS`. Quote paths individually inside it,
+for example `make thumbnail ARGS='"path/to/first clip.mp4" "path/to/second clip.mp4" --at 1'`.
+
 ## How it works
 
 | Step | Finished stream | Live stream | Tools |
@@ -90,3 +126,8 @@ The free model is slower and its picks are rougher than Claude's. Expect some ba
 [Ashton Voss AI](https://www.youtube.com/@ashtonvossai). More free AI systems in the AI Alliance Community.
 
 MIT licensed.
+
+## Upload approved clips
+
+Run `python -m upload.tui` to review runs and publish approved clips to configured
+YouTube, Facebook Page, and Instagram destinations. See the [upload setup guide](upload/README.md).
